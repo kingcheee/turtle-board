@@ -1,0 +1,55 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# 실제 팀 보드 시드(개인 데이터)는 커밋하지 않는다 — 정본은 Supabase.
+# 로컬 파일 모드·시드 확인용 샘플만 추적한다.
+/data/*.md
+!/data/AGENTS.md
+!/data/sample-board.md
+
+# 팀 채팅 로그·삭제 보드 보관함 (로컬 실데이터 — 커밋 안 함)
+/data/.team-chat.json
+/data/.trash/
+
+# 서버 실행 로그 (.next 안에 두면 build가 지우려다 EBUSY로 실패한다 — 밖에 둘 것)
+/server.log
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.local.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

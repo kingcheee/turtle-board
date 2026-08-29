@@ -1,0 +1,136 @@
+:root{
+  --bg:#FEFDFA; --fg:#23281E; --muted:#6e6e76; --faint:#a3a3ac;
+  --line:#EAEAE2; --line-soft:#F7F6F0; --accent:#379427; --sel:#EAF6E4;
+  --hl:#fad9d9; --card:#ffffff;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0d0d0f; --fg:#ededf0; --muted:#94949d; --faint:#65656d;
+         --line:#232327; --line-soft:#18181b; --accent:#55B93E; --sel:#1a2313;
+         --hl:#3d2327; --card:#151517; }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);display:flex;flex-direction:column;
+  font:15px/1.6 "Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","Noto Sans KR",sans-serif;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.pixel{font-family:"Mona12","Mona12 Text KR","Pretendard Variable",Pretendard,sans-serif;
+  color:var(--accent)}
+
+.topbar{display:flex;align-items:center;gap:18px;padding:8px 16px;
+  border-bottom:1px solid var(--line)}
+.topbar h1{font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin:0}
+.tabs{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto}
+.tab{font-size:13px;color:var(--muted);background:none;border:1px solid transparent;
+  border-radius:8px;padding:3px 10px;white-space:nowrap}
+.tab.active{color:var(--accent);border-color:var(--accent);background:var(--sel)}
+.tab.ghost{color:var(--faint);border:1px dashed var(--line)}
+.tab.drop-target{color:var(--accent);border-color:var(--accent);background:var(--sel);
+  outline:2px dashed var(--accent);outline-offset:2px}
+
+.badge.member{margin-left:4px}
+.name-dd{position:relative}
+.name-dd>button{width:100%;min-height:37px;border:1px solid var(--line);border-radius:8px;
+  padding:6px 10px;font-size:13.5px;background:var(--bg);color:var(--muted);text-align:left;
+  display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.name-chip{font-size:12px;border-radius:4px;padding:1px 6px}
+.name-pop{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:21;background:var(--card);
+  border:1px solid var(--line);border-radius:8px;padding:5px;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:1px}
+.name-pop label{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;
+  font-size:13px;cursor:pointer}
+.name-pop label:hover{background:var(--sel)}
+.name-pop input[type=checkbox]{width:auto;padding:0;margin:0;accent-color:var(--accent)}
+.name-dot{width:10px;height:10px;border-radius:3px;border:1px solid;flex:none}
+
+.ctx-back{position:fixed;inset:0;z-index:20}
+.ctx-menu{position:fixed;z-index:21;background:var(--card);border:1px solid var(--line);
+  border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:130px}
+.ctx-menu button{display:block;width:100%;text-align:left;border:0;background:none;
+  padding:6px 12px;font-size:13px;border-radius:6px}
+.ctx-menu button:hover{background:var(--sel)}
+.ctx-menu button.danger{color:#c0392b}
+.ctx-menu button:disabled{opacity:.4;cursor:default}
+.ctx-menu button:disabled:hover{background:none}
+
+/* 행을 minmax(0,1fr)로 묶어야 긴 컬럼이 그리드 영역을 밀어내지 않는다 — auto면 페이지 전체가
+   세로 스크롤되고 상단 탭(카드 드롭 지점)이 밀려 올라간다. */
+.app{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr);
+  flex:1;min-height:0}
+.board{display:flex;gap:12px;overflow-x:auto;padding:10px 16px;align-items:flex-start}
+.column{flex:1 1 0;min-width:168px;max-width:272px;background:var(--line-soft);border-radius:10px;
+  padding:8px;display:flex;flex-direction:column;gap:7px;max-height:100%;overflow-y:auto}
+.col-title{font-size:12px;letter-spacing:.08em;margin:1px 4px 5px}
+.col-count{margin-left:6px;color:var(--muted)}
+.column.drop-target{outline:2px dashed var(--accent);outline-offset:-2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;cursor:grab;text-align:left;overflow-wrap:anywhere}
+.card.drag-overlay{cursor:grabbing;box-shadow:0 8px 24px rgba(0,0,0,.18);
+  border-color:var(--accent)}
+.card.done{opacity:.55}
+.card.done .card-title{text-decoration:line-through}
+.card-title{font-weight:650;font-size:13.5px;line-height:1.45}
+.card-desc{font-size:12.5px;color:var(--muted);margin-top:5px;white-space:pre-wrap}
+.badge{display:inline-block;font-size:11px;color:var(--accent);background:var(--sel);
+  border-radius:4px;padding:1px 6px;margin-top:6px;font-variant-numeric:tabular-nums}
+.card-actions{display:flex;gap:8px;margin-top:6px;align-items:baseline;flex-wrap:wrap}
+.card-actions button{font-size:11px;color:var(--faint);background:none;border:0;padding:0}
+.card-actions button:hover{color:var(--accent)}
+.card-times{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:1px 8px;margin-left:auto;
+  font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+.add-card{font-size:12.5px;color:var(--faint);background:none;
+  border:1px dashed var(--line);border-radius:8px;padding:6px}
+
+.chat{width:300px;border-left:1px solid var(--line);display:flex;flex-direction:column}
+.chat.closed{width:auto;border-left:0}
+.chat-head{padding:8px 14px;border-bottom:1px solid var(--line-soft);
+  display:flex;align-items:center;justify-content:space-between}
+.chat-head .t{font-size:12px;letter-spacing:.08em}
+.chat-head button{font-size:12px;color:var(--faint);background:none;border:0}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;
+  flex-direction:column;gap:10px}
+.msg{font-size:13.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.msg.err{color:#c0392b;font-size:12.5px}
+.msg.busy{color:var(--faint);font-size:12.5px}
+
+.tmsg{display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.tmsg.mine{align-items:flex-end}
+.tmsg .meta{display:flex;align-items:baseline;gap:6px}
+.tmsg.mine .meta{flex-direction:row-reverse}
+.tmsg .who{font-size:11px;border-radius:4px;padding:1px 6px}
+.tmsg .when{font-size:10px;color:var(--faint)}
+.tmsg .bubble{font-size:13px;line-height:1.55;background:var(--line-soft);border-radius:10px;
+  padding:7px 10px;max-width:88%;white-space:pre-wrap;word-break:break-word}
+.tmsg.mine .bubble{background:var(--sel)}
+.chat-input select{flex:none;align-self:flex-start;border:1px solid var(--line);border-radius:8px;
+  background:var(--bg);color:var(--fg);font-size:12px;padding:6px 2px;max-width:72px}
+.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line-soft)}
+.chat-input textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;font:inherit;font-size:13.5px;background:var(--bg);color:var(--fg)}
+button.primary{background:var(--accent);color:#fff;border:0;border-radius:8px;
+  padding:8px 14px;font-size:13px}
+button.primary:disabled{opacity:.5;cursor:default}
+
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.35);
+  display:flex;align-items:center;justify-content:center;z-index:10}
+.modal{background:var(--bg);border:1px solid var(--line);border-radius:12px;
+  padding:20px;width:540px;max-width:92vw;display:flex;flex-direction:column;gap:12px}
+.modal h2{font-size:12px;letter-spacing:.08em;margin:0}
+.modal textarea,.modal input,.modal select{width:100%;border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;font:inherit;font-size:13.5px;
+  background:var(--bg);color:var(--fg)}
+.modal textarea.raw{min-height:150px;
+  font-family:ui-monospace,SFMono-Regular,"Cascadia Mono",Menlo,monospace;font-size:13px}
+.modal .row{display:flex;gap:10px}
+.modal .row>*{flex:1}
+.modal .actions{display:flex;justify-content:flex-end;gap:10px}
+.modal .actions select{width:auto;margin-right:auto}
+.modal .actions button{border:1px solid var(--accent);color:var(--accent);background:var(--sel);
+  border-radius:8px;padding:5px 14px;font-size:13px}
+.modal .actions button.primary{background:var(--accent);color:#fff}
+.hint{font-size:12px;color:var(--faint)}
+
+.login{height:100vh;display:flex;align-items:center;justify-content:center}
+.login form{display:flex;flex-direction:column;gap:12px;width:280px}
+.login input{border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  font:inherit;background:var(--bg);color:var(--fg)}
