@@ -137,6 +137,7 @@ button.primary:disabled{opacity:.5;cursor:default}
   border-radius:4px;padding:1px 6px;background:var(--sel);color:var(--fg);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-ev-time{font-variant-numeric:tabular-nums;margin-right:4px;opacity:.75}
+.cal-ev.done{opacity:.5;text-decoration:line-through}     /* 시간표에서 완료 체크한 일정 */
 
 .tt-list{display:flex;flex-direction:column;gap:6px;max-width:760px}
 .tt-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
@@ -145,7 +146,8 @@ button.primary:disabled{opacity:.5;cursor:default}
 .tt-row.done{opacity:.55}
 .tt-row.done .tt-text{text-decoration:line-through}
 .tt-row input[type=checkbox]{accent-color:var(--accent);margin:0}
-.tt-time{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tt-time{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:92px}
+.tt-time.allday{color:var(--faint)}
 .tt-text{font-weight:650;font-size:13.5px;flex:1;min-width:0;overflow-wrap:anywhere}
 .tt-row .badge{margin-top:0}
 .tt-edit{font-size:11px;color:var(--faint);background:none;border:0;padding:0}

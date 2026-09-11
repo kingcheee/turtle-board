@@ -1,20 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { currentBlock, type TimeBlock } from '@/lib/schedule';
+import { currentEvent, type TeamEvent } from '@/lib/schedule';
 import { addDays, kstNow, weekdayKo } from '@/lib/dates';
 import { memberColor } from '@/lib/members';
-import BlockEditor, { type BlockForm } from './BlockEditor';
+import EventEditor, { type EventForm } from './EventEditor';
 
 const JSON_H = { 'Content-Type': 'application/json' };
 
-type Editor = { mode: 'add' } | { mode: 'edit'; block: TimeBlock };
+type Editor = { mode: 'add' } | { mode: 'edit'; event: TeamEvent };
 
-// 당일 시간표 — 보고 있는 날짜의 블록을 스스로 불러오고, refreshKey가 바뀌면 다시 불러온다.
-// 오늘이면 현재 시각이 든 블록에 형광펜(1분마다 다시 판정).
+// 당일 시간표 — 보고 있는 날짜의 일정(달력과 같은 행)을 스스로 불러오고, refreshKey가 바뀌면 다시 불러온다.
+// 종일 일정 먼저, 그다음 시작 시각 순(서버 정렬). 오늘이면 현재 시각이 든 일정에 형광펜(1분마다 다시 판정).
 export default function TimetableView({ refreshKey }: { refreshKey: number }) {
   const [date, setDate] = useState(() => kstNow().date);
-  const [blocks, setBlocks] = useState<TimeBlock[]>([]);
+  const [events, setEvents] = useState<TeamEvent[]>([]);
   const [now, setNow] = useState(kstNow);
   const [editor, setEditor] = useState<Editor | null>(null);
 
@@ -25,23 +25,25 @@ export default function TimetableView({ refreshKey }: { refreshKey: number }) {
 
   const refetch = useCallback(async () => {
     try {
-      const r = await fetch(`/api/timetable?date=${date}`);
+      const r = await fetch(`/api/events?from=${date}&to=${date}`);
       if (!r.ok) return;
       const d = await r.json();
-      setBlocks(d.blocks ?? []);
+      setEvents(d.events ?? []);
     } catch {}
   }, [date]);
 
   useEffect(() => { refetch(); }, [refetch, refreshKey]);
 
-  const current = date === now.date ? currentBlock(blocks, now.time) : null;
+  const current = date === now.date ? currentEvent(events, now.time) : null;
 
-  async function submit(form: BlockForm): Promise<string | null> {
+  async function submit(form: EventForm): Promise<string | null> {
+    const time = form.time || null;
+    const body = { date: form.date, time, end_time: time ? form.end_time || null : null, title: form.title, members: form.members };
     try {
       const r = editor?.mode === 'edit'
-        ? await fetch(`/api/timetable/${editor.block.id}`, { method: 'PATCH', headers: JSON_H, body: JSON.stringify(form) })
-        : await fetch('/api/timetable', { method: 'POST', headers: JSON_H, body: JSON.stringify({ ...form, date }) });
-      if (r.status === 404) { window.alert('블록이 그새 지워졌어요'); setEditor(null); await refetch(); return null; }
+        ? await fetch(`/api/events/${editor.event.id}`, { method: 'PATCH', headers: JSON_H, body: JSON.stringify(body) })
+        : await fetch('/api/events', { method: 'POST', headers: JSON_H, body: JSON.stringify(body) });
+      if (r.status === 404) { window.alert('일정이 그새 지워졌어요'); setEditor(null); await refetch(); return null; }
       if (!r.ok) {
         const d = await r.json().catch(() => null);
         return d?.error ?? `저장 실패 (HTTP ${r.status})`;
@@ -55,22 +57,23 @@ export default function TimetableView({ refreshKey }: { refreshKey: number }) {
   }
 
   async function remove(id: string) {
-    const r = await fetch(`/api/timetable/${id}`, { method: 'DELETE' });
+    const r = await fetch(`/api/events/${id}`, { method: 'DELETE' });
     if (!r.ok && r.status !== 404) { window.alert(`삭제 실패 (HTTP ${r.status})`); return; }
     setEditor(null);
     await refetch();
   }
 
-  async function toggleDone(b: TimeBlock) {
-    const r = await fetch(`/api/timetable/${b.id}`, { method: 'PATCH', headers: JSON_H, body: JSON.stringify({ done: !b.done }) });
-    if (r.status === 404) window.alert('블록이 그새 지워졌어요');
+  async function toggleDone(e: TeamEvent) {
+    const r = await fetch(`/api/events/${e.id}`, { method: 'PATCH', headers: JSON_H, body: JSON.stringify({ done: !e.done }) });
+    if (r.status === 404) window.alert('일정이 그새 지워졌어요');
     else if (!r.ok) window.alert(`저장 실패 (HTTP ${r.status})`);
     await refetch();
   }
 
-  const initial: BlockForm | null = editor === null ? null
-    : editor.mode === 'add' ? { title: '', start_time: '', end_time: '', members: [] }
-    : { title: editor.block.title, start_time: editor.block.start_time, end_time: editor.block.end_time, members: editor.block.members };
+  const initial: EventForm | null = editor === null ? null
+    : editor.mode === 'add' ? { date, time: '', end_time: '', title: '', members: [] }
+    : { date: editor.event.date, time: editor.event.time ?? '', end_time: editor.event.end_time ?? '',
+        title: editor.event.title, members: editor.event.members };
 
   return (
     <div className="screen">
@@ -81,30 +84,32 @@ export default function TimetableView({ refreshKey }: { refreshKey: number }) {
           <button className="nav" onClick={() => setDate(addDays(date, 1))} aria-label="다음날">›</button>
           <button className="tab ghost" onClick={() => setDate(now.date)}>오늘</button>
         </div>
-        <button className="tab ghost screen-side" onClick={() => setEditor({ mode: 'add' })}>+ 블록</button>
+        <button className="tab ghost screen-side" onClick={() => setEditor({ mode: 'add' })}>+ 일정</button>
       </div>
-      {blocks.length === 0 && <p className="tt-empty">이 날 시간표가 비어 있어요 — + 블록으로 추가</p>}
+      {events.length === 0 && <p className="tt-empty">이 날 일정이 없어요 — + 일정으로 추가</p>}
       <div className="tt-list">
-        {blocks.map((b) => (
-          <div key={b.id} className={`tt-row${b.done ? ' done' : ''}${current?.id === b.id ? ' now' : ''}`}>
-            <input type="checkbox" checked={b.done} onChange={() => toggleDone(b)} aria-label="완료" />
-            <span className="tt-time">{b.start_time}～{b.end_time}</span>
-            <span className="tt-text">{b.title}</span>
-            {b.members.map((m) => {
+        {events.map((e) => (
+          <div key={e.id} className={`tt-row${e.done ? ' done' : ''}${current?.id === e.id ? ' now' : ''}`}>
+            <input type="checkbox" checked={e.done} onChange={() => toggleDone(e)} aria-label="완료" />
+            <span className={`tt-time${e.time ? '' : ' allday'}`}>
+              {e.time ? (e.end_time ? `${e.time}～${e.end_time}` : e.time) : '종일'}
+            </span>
+            <span className="tt-text">{e.title}</span>
+            {e.members.map((m) => {
               const c = memberColor(m);
               return <span key={m} className="badge member" style={{ background: c.bg, color: c.fg }}>{m}</span>;
             })}
-            <button className="tt-edit" onClick={() => setEditor({ mode: 'edit', block: b })}>편집</button>
+            <button className="tt-edit" onClick={() => setEditor({ mode: 'edit', event: e })}>편집</button>
           </div>
         ))}
       </div>
       {editor && initial && (
-        <BlockEditor
+        <EventEditor
           mode={editor.mode}
           initial={initial}
           onClose={() => setEditor(null)}
           onSubmit={submit}
-          onDelete={editor.mode === 'edit' ? () => remove(editor.block.id) : undefined}
+          onDelete={editor.mode === 'edit' ? () => remove(editor.event.id) : undefined}
         />
       )}
     </div>

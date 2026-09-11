@@ -8,6 +8,7 @@ vi.mock('../lib/broadcast');
 
 import { broadcastChange } from '../lib/broadcast';
 import { createEvent, deleteEvent, listEvents, updateEvent, validateEventInput, validateEventPatch } from '../lib/events';
+import { currentEvent, type TeamEvent } from '../lib/schedule';
 import { NotFoundError } from '../lib/storage/errors';
 
 const mockBroadcast = vi.mocked(broadcastChange);
@@ -27,10 +28,15 @@ afterEach(() => {
 describe('validateEventInput', () => {
   it('정상 입력: 제목 트림, 시간 없음은 null, 담당자 미지정은 []', () => {
     expect(validateEventInput({ date: '2026-09-14', title: ' 호남연수원 방문 ' }))
-      .toEqual({ date: '2026-09-14', time: null, end_time: null, title: '호남연수원 방문', members: [] });
+      .toEqual({ date: '2026-09-14', time: null, end_time: null, title: '호남연수원 방문', members: [], done: false });
     expect(validateEventInput({ date: '2026-09-14', time: '', title: 'x' }).time).toBeNull();
     expect(validateEventInput({ date: '2026-09-14', time: '14:00', title: 'x', members: ['모두'] }))
-      .toEqual({ date: '2026-09-14', time: '14:00', end_time: null, title: 'x', members: ['모두'] });
+      .toEqual({ date: '2026-09-14', time: '14:00', end_time: null, title: 'x', members: ['모두'], done: false });
+  });
+
+  it('done: 미지정이면 false, 불리언만 받는다', () => {
+    expect(validateEventInput({ date: '2026-09-14', title: 'x', done: true }).done).toBe(true);
+    expect(() => validateEventInput({ date: '2026-09-14', title: 'x', done: 'yes' })).toThrow(/done/);
   });
 
   it('끝 시각: 시작이 있을 때만, 시작보다 늦어야 한다', () => {
@@ -61,6 +67,8 @@ describe('validateEventPatch', () => {
     expect(validateEventPatch({ time: null }, none)).toEqual({ time: null });
     expect(validateEventPatch({ time: '' }, none)).toEqual({ time: null });
     expect(validateEventPatch({ date: '2026-09-15', members: [] }, none)).toEqual({ date: '2026-09-15', members: [] });
+    expect(validateEventPatch({ done: true }, none)).toEqual({ done: true });
+    expect(() => validateEventPatch({ done: 1 }, none)).toThrow(/done/);
   });
 
   it('시작·끝은 저장된 값과 합쳐 검사한다', () => {
@@ -80,6 +88,22 @@ describe('validateEventPatch', () => {
     expect(() => validateEventPatch({}, none)).toThrow(/바꿀 내용/);
     expect(() => validateEventPatch({ id: 'x' }, none)).toThrow(/바꿀 내용/);
     expect(() => validateEventPatch({ title: '' }, none)).toThrow(RangeError);
+  });
+});
+
+describe('currentEvent', () => {
+  const mk = (time: string | null, end_time: string | null, id = String(time)): TeamEvent =>
+    ({ id, date: '2026-09-11', time, end_time, title: 't', members: [], done: false, created_at: '' });
+
+  it('time ≤ now < end_time 인 첫 일정, 끝 없는 일정·종일은 제외, 없으면 null', () => {
+    const events = [mk(null, null, 'allday'), mk('09:00', '09:40'), mk('09:40', '10:00', 'short'), mk('09:40', '12:00'), mk('11:00', null, 'open')];
+    expect(currentEvent(events, '09:00')?.id).toBe('09:00');
+    expect(currentEvent(events, '09:39')?.id).toBe('09:00');
+    expect(currentEvent(events, '09:40')?.id).toBe('short');
+    expect(currentEvent(events, '10:00')?.id).toBe('09:40');
+    expect(currentEvent(events, '11:30')?.id).toBe('09:40');
+    expect(currentEvent(events, '12:00')).toBeNull();
+    expect(currentEvent([], '09:00')).toBeNull();
   });
 });
 
@@ -105,6 +129,8 @@ describe('events (fs 모드)', () => {
     const e = await createEvent({ date: '2026-09-14', title: '방문' });
     const u = await updateEvent(e.id, { time: '15:00', members: ['모두'] });
     expect(u).toEqual({ ...e, time: '15:00', members: ['모두'] });
+    expect((await updateEvent(e.id, { done: true })).done).toBe(true);
+    expect((await updateEvent(e.id, { done: false })).done).toBe(false);
     expect(await updateEvent(e.id, { end_time: '16:00' })).toEqual({ ...u, end_time: '16:00' });
     await expect(updateEvent(e.id, { end_time: '14:00' })).rejects.toThrow(/늦어야/);
     expect(await updateEvent(e.id, { time: null })).toEqual({ ...u, time: null, end_time: null });

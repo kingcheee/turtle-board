@@ -15,38 +15,29 @@ create table if not exists kanban_trash (
   trashed_at timestamptz not null default now()
 );
 
--- 달력 일정 (2026-09-11 추가) — 행 단위, 카드 마감과 무관한 독립 저장소
+-- 일정 (2026-09-11 추가) — 행 단위, 카드 마감과 무관한 독립 저장소. 달력과 당일 시간표가 같은 행을 본다.
 create table if not exists kanban_events (
   id uuid primary key default gen_random_uuid(),
   date date not null,
   time text,
-  end_time text,       -- 2026-09-11 추가: 끝 시각(선택, time이 있을 때만)
+  end_time text,                          -- 끝 시각(선택, time이 있을 때만)
   title text not null,
   members text[] not null default '{}',
+  done boolean not null default false,    -- 시간표의 완료 체크
   created_at timestamptz not null default now()
 );
-alter table kanban_events add column if not exists end_time text; -- 컬럼 추가 전에 만든 DB용
+alter table kanban_events add column if not exists end_time text;                            -- 컬럼 추가 전에 만든 DB용
+alter table kanban_events add column if not exists done boolean not null default false;      -- 〃
 create index if not exists kanban_events_date on kanban_events(date);
 
--- 당일 시간표 블록 (2026-09-11 추가) — 팀 공용, 날짜별
-create table if not exists kanban_timetable (
-  id uuid primary key default gen_random_uuid(),
-  date date not null,
-  start_time text not null,
-  end_time text not null,
-  title text not null,
-  members text[] not null default '{}',
-  done boolean not null default false,
-  created_at timestamptz not null default now()
-);
-create index if not exists kanban_timetable_date on kanban_timetable(date);
+-- 시간표는 별도 테이블이 아니다 — 그날의 일정(kanban_events)을 그대로 보여준다(2026-09-11 통합).
+-- 통합 전 kanban_timetable 테이블은 비어 있어 옮길 행 없이 지웠다: drop table kanban_timetable;
 
 -- RLS 켜고 정책 없음: anon·authenticated는 아무것도 못 읽고 못 쓴다.
 -- 서버(service role)는 RLS를 우회한다. anon 키는 Realtime 구독에만 쓰인다.
 alter table kanban_boards enable row level security;
 alter table kanban_trash enable row level security;
 alter table kanban_events enable row level security;
-alter table kanban_timetable enable row level security;
 
 -- 팀 채팅(kanban_chat)은 2026-09-11에 기능을 뺐다. 이 파일은 더 이상 만들지 않으며,
 -- 이미 있는 테이블은 건드리지 않는다 — 지우려면 수동으로: drop table kanban_chat;

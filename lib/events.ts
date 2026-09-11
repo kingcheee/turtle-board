@@ -1,11 +1,11 @@
 import { addDays } from './dates';
-import { checkDate, checkId, checkMembers, checkTime, checkTitle } from './fields';
+import { checkDate, checkDone, checkId, checkMembers, checkTime, checkTitle } from './fields';
 import { rowStore } from './storage/rows';
 import { broadcastChange } from './broadcast';
 import type { TeamEvent } from './schedule';
 
-// 달력 일정 — kanban_events 테이블(fs 모드: data/.events.json). 카드 마감과 무관한 독립 저장소.
-// 서버 전용(저장소를 문다) — 타입·순수 함수는 lib/schedule.ts.
+// 일정 — kanban_events 테이블(fs 모드: data/.events.json). 달력과 그날 시간표가 같은 행을 본다.
+// 카드 마감과 무관한 독립 저장소. 서버 전용(저장소를 문다) — 타입·순수 함수는 lib/schedule.ts.
 
 export type EventInput = Omit<TeamEvent, 'id' | 'created_at'>;
 
@@ -29,7 +29,10 @@ export function validateEventInput(x: unknown): EventInput {
   const time = checkOptionalTime(o.time);
   const end_time = checkOptionalTime(o.end_time);
   checkSpan(time, end_time);
-  return { date: checkDate(o.date), time, end_time, title: checkTitle(o.title), members: checkMembers(o.members) };
+  return {
+    date: checkDate(o.date), time, end_time, title: checkTitle(o.title), members: checkMembers(o.members),
+    done: o.done === undefined ? false : checkDone(o.done),
+  };
 }
 
 // 부분 갱신 — 온 필드만 검증하되, 시작·끝은 저장된 값(current)과 합쳐 순서를 검사한다.
@@ -46,6 +49,7 @@ export function validateEventPatch(x: unknown, current: Pick<TeamEvent, 'time' |
   }
   if (o.title !== undefined) p.title = checkTitle(o.title);
   if (o.members !== undefined) p.members = checkMembers(o.members);
+  if (o.done !== undefined) p.done = checkDone(o.done);
   if (Object.keys(p).length === 0) throw new RangeError('바꿀 내용이 없어요');
   return p;
 }

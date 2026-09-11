@@ -20,7 +20,6 @@ export default function Page() {
   const [board, setBoard] = useState<UiBoard | null>(null);
   // 달력·시간표 재조회 트리거 — 실시간 신호·재접속 때 +1, 뷰가 키 변화를 보고 다시 불러온다
   const [eventsKey, setEventsKey] = useState(0);
-  const [timetableKey, setTimetableKey] = useState(0);
   const activeRef = useRef(active);
   activeRef.current = active;
   const boardRef = useRef(board);
@@ -53,16 +52,14 @@ export default function Page() {
   }, [refetch, refetchBoards]);
 
   const onEvents = useCallback(() => setEventsKey((k) => k + 1), []);
-  const onTimetable = useCallback(() => setTimetableKey((k) => k + 1), []);
 
   const onConnect = useCallback(() => {
     refetchBoards();
     refetch();
     onEvents();
-    onTimetable();
-  }, [refetchBoards, refetch, onEvents, onTimetable]);
+  }, [refetchBoards, refetch, onEvents]);
 
-  useRealtime({ onBoard: onRemoteBoard, onEvents, onTimetable, onConnect });
+  useRealtime({ onBoard: onRemoteBoard, onEvents, onConnect });
 
   const sendOp = useCallback(async (op: Op): Promise<boolean> => {
     const name = activeRef.current;
@@ -147,7 +144,7 @@ export default function Page() {
       </div>
       <div className="app">
         {screen === 'calendar' && <CalendarView refreshKey={eventsKey} />}
-        {screen === 'timetable' && <TimetableView refreshKey={timetableKey} />}
+        {screen === 'timetable' && <TimetableView refreshKey={eventsKey} />}
         {screen === 'board' && (board
           ? <BoardView board={board} onOp={sendOp} overCol={overCol} />
           : <p style={{ padding: 24 }}>불러오는 중…</p>)}

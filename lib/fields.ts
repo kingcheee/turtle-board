@@ -36,6 +36,11 @@ export function checkMembers(v: unknown): string[] {
   return [...new Set(v)];
 }
 
+export function checkDone(v: unknown): boolean {
+  if (typeof v !== 'boolean') throw new RangeError('done은 true/false여야 해요');
+  return v;
+}
+
 // id는 uuid만 — 아무 문자열이나 PostgREST 필터에 넣으면 400(uuid 파싱 실패)이 500으로 새므로 먼저 404로 끊는다
 export function checkId(v: string): string {
   if (!UUID_RE.test(v)) throw new NotFoundError(`없는 행: ${v}`);

@@ -102,7 +102,7 @@ export default function CalendarView({ refreshKey }: { refreshKey: number }) {
                 return (
                   <button
                     key={e.id}
-                    className="cal-ev"
+                    className={`cal-ev${e.done ? ' done' : ''}`}
                     style={c ? { background: c.bg, color: c.fg } : undefined}
                     title={`${span ? `${span} ` : ''}${e.title}${e.members.length ? ` — ${e.members.join(', ')}` : ''}`}
                     onClick={(ev) => { ev.stopPropagation(); setEditor({ mode: 'edit', event: e }); }}

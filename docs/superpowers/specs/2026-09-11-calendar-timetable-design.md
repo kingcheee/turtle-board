@@ -1,5 +1,8 @@
 # 달력·시간표 추가 + 팀 채팅 제거 — 설계
 
+> ⚠ 같은 날 저녁 `2026-09-11-unified-schedule-design.md`로 **시간표 부분이 대체**됐다 — 시간표는 별도 저장소가 아니라
+> 그날의 일정을 보여준다. 이 문서의 §2.3·§3.6 `lib/timetable.ts`·§4 `/api/timetable`·§3.3 `kanban_timetable`은 더 이상 유효하지 않다.
+
 > 2026-09-11. 거북이 보드(팀, https://turtle-board.vercel.app)에 **달력**과 **당일 시간표** 화면을
 > 추가하고 **팀 채팅 사이드바를 걷어낸다.** 브레인스토밍에서 합의한 내용의 정본이며,
 > 구현 계획은 `docs/superpowers/plans/`에 따로 둔다.
