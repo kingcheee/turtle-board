@@ -6,8 +6,10 @@ import { NotFoundError, VersionConflictError } from './storage/errors';
 import { fileVersion } from './storage/version';
 import type { StorageDriver } from './storage/types';
 import { fsDriver } from './storage/fs';
-import { hasSupabaseEnv, supabaseDriver } from './storage/supabase';
+import { storageMode } from './storage/mode';
+import { supabaseDriver } from './storage/supabase';
 import { broadcastChange } from './broadcast';
+import { kstNow } from './dates';
 
 export { NotFoundError, VersionConflictError } from './storage/errors';
 export { fileVersion } from './storage/version';
@@ -19,10 +21,7 @@ const TEMPLATE_COLUMNS = ['📥 아이디어', '📋 이번주', '🔨 진행중
 const PINNED_BOARD = '파이널 프로젝트';
 
 function driver(): StorageDriver {
-  if (hasSupabaseEnv()) return supabaseDriver;
-  // Vercel에서 env 누락 시 fs로 조용히 폴백하면 쓰기가 증발한다 — 명시적으로 죽인다
-  if (process.env.VERCEL) throw new Error('Supabase 환경변수 누락 — Vercel에서 fs 폴백 금지');
-  return fsDriver;
+  return storageMode() === 'supabase' ? supabaseDriver : fsDriver;
 }
 
 export function sanitizeName(name: string): string {
@@ -51,15 +50,10 @@ export async function readBoard(name: string): Promise<UiBoard> {
   };
 }
 
-// 프로세스 TZ와 무관하게 KST로 찍는다 — Vercel(TZ=UTC)에서도 정확해야 한다
+// 카드 타임스탬프 'YYYY-MM-DD HH:mm' — 프로세스 TZ와 무관하게 KST(kstNow)
 function localStamp(): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).formatToParts(new Date());
-  const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? '';
-  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`;
+  const { date, time } = kstNow();
+  return `${date} ${time}`;
 }
 
 export async function applyBoardOp(name: string, op: Op, expectedVersion: string): Promise<{ version: string }> {
