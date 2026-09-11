@@ -10,6 +10,8 @@
   `data/sample-board.md` 샘플뿐. 정본은 Supabase다.
 - 코드 수정 시 반드시 `npm test` 통과 확인. PR도 CI(`.github/workflows/test.yml`)가 같은
   테스트를 돌린다.
+- 공휴일은 `lib/holidays.ts` — 양력은 규칙, 음력 셋(설·부처님오신날·추석)은 `LUNAR` 연도표(2025～2027), 대체공휴일은
+  제3조 규칙으로 계산. **해가 바뀌면 `LUNAR`에 세 날짜를, 선거일·임시공휴일은 `EXTRA`에 넣는다**(테스트 `tests/holidays.test.ts`).
 - 일정(`lib/events.ts`)·시간표(`lib/timetable.ts`)는 보드와 달리 **행 단위 저장소**(`lib/storage/rows.ts`,
   CAS 없음)다. 클라이언트가 쓰는 타입·순수 함수는 `lib/schedule.ts`·`lib/dates.ts`에만 둔다 — 저장소를
   무는 모듈을 클라이언트 컴포넌트가 import하면 `node:fs` 때문에 빌드가 깨진다(2026-09-11 실측).

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { TeamEvent } from '@/lib/schedule';
 import { addMonths, formatMonthKo, kstNow, monthGrid } from '@/lib/dates';
 import { memberColor } from '@/lib/members';
+import { holidayName, isRedDay } from '@/lib/holidays';
 import EventEditor, { type EventForm } from './EventEditor';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -78,32 +79,38 @@ export default function CalendarView({ refreshKey }: { refreshKey: number }) {
         </div>
       </div>
       <div className="cal-wds">
-        {WEEKDAYS.map((w) => <div key={w} className="cal-wd">{w}</div>)}
+        {WEEKDAYS.map((w) => <div key={w} className={`cal-wd${w === '일' ? ' red' : ''}`}>{w}</div>)}
       </div>
       <div className="cal-grid">
-        {grid.cells.map((d) => (
-          <div
-            key={d}
-            className={`cal-cell${d.slice(0, 7) !== ym ? ' other' : ''}${d === today ? ' today' : ''}`}
-            onClick={() => setEditor({ mode: 'add', date: d })}
-          >
-            <div className="cal-day">{Number(d.slice(8, 10))}</div>
-            {(byDate.get(d) ?? []).map((e) => {
-              const c = e.members[0] ? memberColor(e.members[0]) : null;
-              return (
-                <button
-                  key={e.id}
-                  className="cal-ev"
-                  style={c ? { background: c.bg, color: c.fg } : undefined}
-                  title={`${e.time ? `${e.time} ` : ''}${e.title}${e.members.length ? ` — ${e.members.join(', ')}` : ''}`}
-                  onClick={(ev) => { ev.stopPropagation(); setEditor({ mode: 'edit', event: e }); }}
-                >
-                  {e.time && <span className="cal-ev-time">{e.time}</span>}{e.title}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        {grid.cells.map((d) => {
+          const holiday = holidayName(d);
+          return (
+            <div
+              key={d}
+              className={`cal-cell${d.slice(0, 7) !== ym ? ' other' : ''}${d === today ? ' today' : ''}${isRedDay(d) ? ' red' : ''}`}
+              onClick={() => setEditor({ mode: 'add', date: d })}
+            >
+              <div className="cal-daybar">
+                <span className="cal-day">{Number(d.slice(8, 10))}</span>
+                {holiday && <span className="cal-hol" title={holiday}>{holiday}</span>}
+              </div>
+              {(byDate.get(d) ?? []).map((e) => {
+                const c = e.members[0] ? memberColor(e.members[0]) : null;
+                return (
+                  <button
+                    key={e.id}
+                    className="cal-ev"
+                    style={c ? { background: c.bg, color: c.fg } : undefined}
+                    title={`${e.time ? `${e.time} ` : ''}${e.title}${e.members.length ? ` — ${e.members.join(', ')}` : ''}`}
+                    onClick={(ev) => { ev.stopPropagation(); setEditor({ mode: 'edit', event: e }); }}
+                  >
+                    {e.time && <span className="cal-ev-time">{e.time}</span>}{e.title}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
       {editor && initial && (
         <EventEditor
