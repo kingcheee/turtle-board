@@ -21,5 +21,7 @@
 
 ## 지금 상태 (2026-09-11)
 
-달력·시간표 추가 + 팀 채팅 제거가 **로컬 커밋까지** 끝났고 push(=프로덕션 배포)는 Supabase 테이블 생성 뒤로
-보류 중이다. 다음 행동은 `docs/handoffs/HANDOFF.md`의 「다음 액션」.
+달력·시간표 추가 + 팀 채팅 제거가 **프로덕션에 배포됐다**(`d36816e`, Vercel success). Supabase에
+`kanban_events`·`kanban_timetable`이 있고 프로덕션에서 일정·블록 추가·삭제가 다른 탭에 실시간 반영되는 것까지
+확인했다. 이어갈 미완 작업 없음 — `docs/handoffs/HANDOFF.md`는 완료 기록. `kanban_chat` 테이블은 사용자 판단으로
+아직 남아 있다(코드는 더 이상 안 본다).

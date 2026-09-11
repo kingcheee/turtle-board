@@ -1,5 +1,7 @@
 # HANDOFF — 달력·시간표 배포 (updated 2026-09-11)
 
+> **완료 (2026-09-11 두 번째 세션)** — 아래 목표를 전부 달성했다. 이어갈 미완 작업 없음. 기록용으로 남긴다.
+
 ## 목표
 
 팀 거북이 보드(https://turtle-board.vercel.app, GitHub `kingcheee/turtle-board`)에 **달력·당일 시간표를 추가하고
@@ -13,13 +15,12 @@
       검증: `npx tsc --noEmit` 통과 · `npm test` 16파일 163 통과 · `npm run build` 통과 · 파일 모드(`next dev -p 3123`)
       브라우저 실측(탭 전환·일정 추가·블록 추가/완료 토글/편집 모달·카드 편집의 담당자 팝업). 계획·검증 기록은
       `docs/superpowers/plans/2026-09-11-calendar-timetable.md`.
-- [ ] **Supabase 테이블 생성** — `supabase/setup.sql` 재실행. 이 세션은 Brave Origin의 Supabase가 로그아웃 상태라
-      (SQL Editor URL이 sign-in으로 리다이렉트) 실행하지 못했다. 로그인은 사용자만 할 수 있다.
-      2026-09-11 두 번째 세션도 같은 상태(curl 확인: 두 테이블 모두 PGRST205). 다른 경로(DB 비밀번호·Supabase CLI·
-      PAT·Vercel env의 DB URL)는 이 머신에 하나도 없어 대시보드 로그인 외엔 방법이 없다.
-- [ ] **`git push origin main`** — 테이블이 없는 채 push하면 배포된 달력·시간표 API가 500이라(보드는 정상) **일부러
-      보류**했다. 위 SQL이 끝난 뒤 push한다.
-- [ ] 프로덕션 확인.
+- [x] **Supabase 테이블 생성** — 사용자가 Brave에서 Supabase에 로그인한 뒤 Claude in Chrome으로 SQL Editor에
+      `setup.sql` 전체를 넣고 Run(「Success. No rows returned」). curl로 두 테이블 `[]` 확인. 로그인 전엔 다른 경로
+      (DB 비밀번호·Supabase CLI·PAT·Vercel env의 DB URL)가 이 머신에 하나도 없어 대시보드 로그인 외엔 방법이 없었다.
+- [x] **`git push origin main`** — `a797788..d36816e`. Vercel status success, CI `test` success.
+- [x] 프로덕션 확인 — 두 탭에서 달력에 일정, 시간표에 블록을 추가하니 다른 탭에 새로고침 없이 반영됐고,
+      `DELETE /api/events/:id`·`/api/timetable/:id`(200)로 지운 것도 실시간으로 사라졌다. 테스트 행은 지웠다.
 
 ## 계획 (전문)
 
@@ -77,9 +78,10 @@
 
 ## 다음 액션
 <!-- NEXT-ACTIONS -->
-- [ ] 사용자에게 Supabase 로그인(또는 직접 `supabase/setup.sql` 실행)을 요청하고, 위 curl로 `kanban_events`가 생겼는지 확인
-- [ ] 테이블 확인 후 `git push origin main` → `gh api repos/kingcheee/turtle-board/commits/$(git rev-parse HEAD)/status --jq .state`가 success인지
-- [ ] 프로덕션에서 일정·블록 추가 → 다른 탭 실시간 반영 확인
+- [x] 사용자에게 Supabase 로그인(또는 직접 `supabase/setup.sql` 실행)을 요청하고, 위 curl로 `kanban_events`가 생겼는지 확인
+- [x] 테이블 확인 후 `git push origin main` → `gh api repos/kingcheee/turtle-board/commits/$(git rev-parse HEAD)/status --jq .state`가 success인지
+- [x] 프로덕션에서 일정·블록 추가 → 다른 탭 실시간 반영 확인
+- [ ] (선택, 사용자 판단) Supabase에서 `drop table kanban_chat;` — 시키지 않으면 하지 않는다
 - [x] (선택) 스펙 §7·§3.5·§3.6에 `lib/schedule.ts`·`lib/fields.ts`·`RowStore.get` 반영 (2026-09-11 두 번째 세션, 로컬 커밋)
 <!-- /NEXT-ACTIONS -->
 
