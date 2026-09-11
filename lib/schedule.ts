@@ -4,9 +4,10 @@
 export interface TeamEvent {
   id: string;
   date: string;          // 'YYYY-MM-DD'
-  time: string | null;   // 'HH:MM' 또는 null = 시간 없음
+  time: string | null;      // 'HH:MM' 또는 null = 시간 없음(종일)
+  end_time: string | null;  // 'HH:MM' 또는 null — time이 있을 때만, time보다 늦어야 한다
   title: string;
-  members: string[];     // lib/members MEMBERS 이름만
+  members: string[];        // lib/members MEMBERS 이름만
   created_at: string;
 }
 

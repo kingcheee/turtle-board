@@ -4,7 +4,7 @@ import { useState } from 'react';
 import MemberPicker from './MemberPicker';
 import Modal from './Modal';
 
-export interface EventForm { date: string; time: string; title: string; members: string[] } // time '' = 시간 없음
+export interface EventForm { date: string; time: string; end_time: string; title: string; members: string[] } // time·end_time '' = 없음
 
 // 일정 추가·편집 모달. onSubmit이 오류 메시지를 돌려주면 모달을 유지한 채 보여준다(입력은 남는다).
 export default function EventEditor({ mode, initial, onSubmit, onDelete, onClose }: {
@@ -40,10 +40,12 @@ export default function EventEditor({ mode, initial, onSubmit, onDelete, onClose
       />
       <div className="row">
         <input type="date" aria-label="날짜" value={form.date} onChange={(e) => set('date', e.target.value)} />
-        <input type="time" aria-label="시간 (선택)" value={form.time} onChange={(e) => set('time', e.target.value)} />
+        <input type="time" aria-label="시작 (선택)" value={form.time} onChange={(e) => set('time', e.target.value)} />
+        <input type="time" aria-label="끝 (선택)" value={form.end_time} disabled={!form.time}
+          onChange={(e) => set('end_time', e.target.value)} />
         <MemberPicker value={form.members} onChange={(m) => set('members', m)} />
       </div>
-      <p className="hint">시간은 비워도 된다 — 비우면 종일 일정.</p>
+      <p className="hint">시간은 비워도 된다 — 비우면 종일 일정. 끝 시각은 시작이 있을 때만.</p>
       {err && <p className="form-err">{err}</p>}
       <div className="actions">
         {mode === 'edit' && onDelete && (

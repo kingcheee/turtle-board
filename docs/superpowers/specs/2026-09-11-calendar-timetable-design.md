@@ -34,12 +34,12 @@
 - **월 그리드**: 일요일 시작 7열. 그 달 1일이 든 주의 일요일부터 말일이 든 주의 토요일까지
   (5～6주, 항상 7의 배수 칸). 다른 달 칸은 흐리게(`--faint`). 오늘 칸은 날짜 숫자에 accent.
 - **헤더**: `‹` `2026년 9월` `›` `오늘`.
-- **칸 안**: 일정을 한 줄씩 — 시간 있으면 `14:00 제목`, 없으면 `제목`. 정렬은 시간 없는 것
+- **칸 안**: 일정을 한 줄씩 — 시간 있으면 `14:00 제목`, 끝 시각까지 있으면 `14:00–15:30 제목`, 없으면 `제목`. 정렬은 시간 없는 것
   먼저, 그다음 시간 오름차순, 같으면 생성 순. 담당자가 있으면 첫 담당자의 색(`lib/members`)을
   배경으로, 없으면 `--sel`. 제목은 한 줄 말줄임.
 - **조작**: 칸의 빈 곳 클릭 → 추가 모달(날짜 채워짐). 일정 클릭 → 편집 모달(삭제 버튼 포함).
 - **일정 편집 모달**(`EventEditor`): 제목(자동 포커스) · 날짜(`<input type=date>`) ·
-  시간(`<input type=time>`, 비울 수 있음) · 담당자(`MemberPicker`, 복수). 편집 모드에서는 날짜도
+  시작·끝(`<input type=time>` 둘, 비울 수 있음 — 끝은 시작이 있을 때만 활성) · 담당자(`MemberPicker`, 복수). 편집 모드에서는 날짜도
   바꿀 수 있다(회의가 미뤄지는 경우). 저장 비활성 조건: 제목 공백.
 - **조회 범위**: 클라이언트가 그리드 첫 칸～마지막 칸을 `from`·`to`로 요청한다.
 
@@ -77,6 +77,7 @@ interface TeamEvent {
   id: string;            // uuid
   date: string;          // 'YYYY-MM-DD'
   time: string | null;   // 'HH:MM' (24h) 또는 null = 시간 없음
+  end_time: string | null; // 'HH:MM' 또는 null — time이 있을 때만, time보다 늦어야 한다 (2026-09-11 추가)
   title: string;         // 1～200자, 앞뒤 공백 제거
   members: string[];     // lib/members MEMBERS 이름만. 빈 배열 허용
   created_at: string;    // ISO
@@ -101,10 +102,12 @@ create table if not exists kanban_events (
   id uuid primary key default gen_random_uuid(),
   date date not null,
   time text,
+  end_time text,
   title text not null,
   members text[] not null default '{}',
   created_at timestamptz not null default now()
 );
+alter table kanban_events add column if not exists end_time text; -- 컬럼 추가 전에 만든 DB용
 create index if not exists kanban_events_date on kanban_events(date);
 
 create table if not exists kanban_timetable (
@@ -166,12 +169,14 @@ function rowStore<T extends { id: string }>(table: string, file: string): RowSto
 
 **`lib/events.ts`**
 - `validateEventInput(x: unknown): EventInput` — `date`는 `YYYY-MM-DD`이고 실제 존재하는 날짜,
-  `time`은 `HH:MM`(00～23, 00～59) 또는 null/미지정, `title` 1～200자(트림), `members`는 배열이고
+  `time`은 `HH:MM`(00～23, 00～59) 또는 null/미지정, `end_time`은 `HH:MM` 또는 null인데 `time`이 있을 때만
+  허용되고 `time`보다 늦어야 한다, `title` 1～200자(트림), `members`는 배열이고
   전부 `MEMBERS` 이름(중복 제거). 위반은 `RangeError`(한국어 메시지).
 - `listEvents(from, to)` — `from ≤ to`이고 `from`～`to`(양끝 포함) 일수가 62를 넘으면 `RangeError`
   (월 그리드는 최대 42일). 정렬: date → time null 먼저 → time → created_at.
 - `createEvent(input)` / `updateEvent(id, patch)` / `deleteEvent(id)` — 각각 성공 후
-  `broadcastChange({ kind: 'events' })`. patch도 같은 검증(부분 검증).
+  `broadcastChange({ kind: 'events' })`. patch도 같은 검증(부분 검증) — 시작·끝은 저장된 행과 합쳐 검사하고,
+  시작을 지우면 끝도 같이 지운다.
 
 **`lib/timetable.ts`**
 - `validateBlockInput(x)` — date·title·members는 위와 같고, `start_time`·`end_time` 둘 다 `HH:MM`,
@@ -201,7 +206,7 @@ function rowStore<T extends { id: string }>(table: string, file: string): RowSto
 | 메서드·경로 | 요청 | 응답 |
 |---|---|---|
 | `GET /api/events?from=&to=` | 둘 다 필수 | `{ events: TeamEvent[] }` |
-| `POST /api/events` | `{ date, time?, title, members? }` | `201 { event }` |
+| `POST /api/events` | `{ date, time?, end_time?, title, members? }` | `201 { event }` |
 | `PATCH /api/events/[id]` | 위 필드 중 일부 | `{ event }` |
 | `DELETE /api/events/[id]` | — | `{ ok: true }` |
 | `GET /api/timetable?date=` | 필수 | `{ blocks: TimeBlock[] }` |

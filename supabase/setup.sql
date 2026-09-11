@@ -20,10 +20,12 @@ create table if not exists kanban_events (
   id uuid primary key default gen_random_uuid(),
   date date not null,
   time text,
+  end_time text,       -- 2026-09-11 추가: 끝 시각(선택, time이 있을 때만)
   title text not null,
   members text[] not null default '{}',
   created_at timestamptz not null default now()
 );
+alter table kanban_events add column if not exists end_time text; -- 컬럼 추가 전에 만든 DB용
 create index if not exists kanban_events_date on kanban_events(date);
 
 -- 당일 시간표 블록 (2026-09-11 추가) — 팀 공용, 날짜별

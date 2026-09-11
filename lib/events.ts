@@ -17,17 +17,33 @@ function checkOptionalTime(v: unknown): string | null {
   return v === undefined || v === null || v === '' ? null : checkTime(v);
 }
 
-export function validateEventInput(x: unknown): EventInput {
-  const o = (x ?? {}) as Record<string, unknown>;
-  return { date: checkDate(o.date), time: checkOptionalTime(o.time), title: checkTitle(o.title), members: checkMembers(o.members) };
+// 끝 시각은 시작이 있을 때만, 시작보다 늦게
+function checkSpan(time: string | null, end_time: string | null): void {
+  if (end_time === null) return;
+  if (time === null) throw new RangeError('끝 시각은 시작 시각이 있을 때만 넣을 수 있어요');
+  if (end_time <= time) throw new RangeError('끝 시각은 시작보다 늦어야 해요');
 }
 
-// 부분 갱신 — 온 필드만 검증한다
-export function validateEventPatch(x: unknown): Partial<EventInput> {
+export function validateEventInput(x: unknown): EventInput {
+  const o = (x ?? {}) as Record<string, unknown>;
+  const time = checkOptionalTime(o.time);
+  const end_time = checkOptionalTime(o.end_time);
+  checkSpan(time, end_time);
+  return { date: checkDate(o.date), time, end_time, title: checkTitle(o.title), members: checkMembers(o.members) };
+}
+
+// 부분 갱신 — 온 필드만 검증하되, 시작·끝은 저장된 값(current)과 합쳐 순서를 검사한다.
+// 시작을 지우면 끝도 같이 지운다(끝만 남는 상태를 만들지 않는다).
+export function validateEventPatch(x: unknown, current: Pick<TeamEvent, 'time' | 'end_time'>): Partial<EventInput> {
   const o = (x ?? {}) as Record<string, unknown>;
   const p: Partial<EventInput> = {};
   if (o.date !== undefined) p.date = checkDate(o.date);
   if (o.time !== undefined) p.time = checkOptionalTime(o.time);
+  if (o.end_time !== undefined) p.end_time = checkOptionalTime(o.end_time);
+  if (p.time === null && o.end_time === undefined && current.end_time !== null) p.end_time = null;
+  if (p.time !== undefined || p.end_time !== undefined) {
+    checkSpan(p.time ?? current.time, p.end_time ?? current.end_time);
+  }
   if (o.title !== undefined) p.title = checkTitle(o.title);
   if (o.members !== undefined) p.members = checkMembers(o.members);
   if (Object.keys(p).length === 0) throw new RangeError('바꿀 내용이 없어요');
@@ -57,7 +73,8 @@ export async function createEvent(input: unknown): Promise<TeamEvent> {
 }
 
 export async function updateEvent(id: string, patch: unknown): Promise<TeamEvent> {
-  const updated = await store().update(checkId(id), validateEventPatch(patch));
+  const current = await store().get(checkId(id));
+  const updated = await store().update(id, validateEventPatch(patch, current));
   await broadcastChange({ kind: 'events' });
   return updated;
 }

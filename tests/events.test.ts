@@ -27,10 +27,20 @@ afterEach(() => {
 describe('validateEventInput', () => {
   it('정상 입력: 제목 트림, 시간 없음은 null, 담당자 미지정은 []', () => {
     expect(validateEventInput({ date: '2026-09-14', title: ' 호남연수원 방문 ' }))
-      .toEqual({ date: '2026-09-14', time: null, title: '호남연수원 방문', members: [] });
+      .toEqual({ date: '2026-09-14', time: null, end_time: null, title: '호남연수원 방문', members: [] });
     expect(validateEventInput({ date: '2026-09-14', time: '', title: 'x' }).time).toBeNull();
     expect(validateEventInput({ date: '2026-09-14', time: '14:00', title: 'x', members: ['모두'] }))
-      .toEqual({ date: '2026-09-14', time: '14:00', title: 'x', members: ['모두'] });
+      .toEqual({ date: '2026-09-14', time: '14:00', end_time: null, title: 'x', members: ['모두'] });
+  });
+
+  it('끝 시각: 시작이 있을 때만, 시작보다 늦어야 한다', () => {
+    expect(validateEventInput({ date: '2026-09-14', time: '14:00', end_time: '15:30', title: 'x' }))
+      .toMatchObject({ time: '14:00', end_time: '15:30' });
+    expect(validateEventInput({ date: '2026-09-14', time: '14:00', end_time: '', title: 'x' }).end_time).toBeNull();
+    expect(() => validateEventInput({ date: '2026-09-14', end_time: '15:30', title: 'x' })).toThrow(/시작/);
+    expect(() => validateEventInput({ date: '2026-09-14', time: '14:00', end_time: '14:00', title: 'x' })).toThrow(/늦어야/);
+    expect(() => validateEventInput({ date: '2026-09-14', time: '14:00', end_time: '13:00', title: 'x' })).toThrow(/늦어야/);
+    expect(() => validateEventInput({ date: '2026-09-14', time: '14:00', end_time: '3pm', title: 'x' })).toThrow(RangeError);
   });
 
   it('잘못된 날짜·시간·제목·담당자·입력 자체는 RangeError', () => {
@@ -43,17 +53,33 @@ describe('validateEventInput', () => {
 });
 
 describe('validateEventPatch', () => {
+  const none = { time: null, end_time: null };
+  const timed = { time: '14:00', end_time: '15:00' };
+
   it('온 필드만 검증해 돌려준다', () => {
-    expect(validateEventPatch({ title: ' 새 제목 ' })).toEqual({ title: '새 제목' });
-    expect(validateEventPatch({ time: null })).toEqual({ time: null });
-    expect(validateEventPatch({ time: '' })).toEqual({ time: null });
-    expect(validateEventPatch({ date: '2026-09-15', members: [] })).toEqual({ date: '2026-09-15', members: [] });
+    expect(validateEventPatch({ title: ' 새 제목 ' }, none)).toEqual({ title: '새 제목' });
+    expect(validateEventPatch({ time: null }, none)).toEqual({ time: null });
+    expect(validateEventPatch({ time: '' }, none)).toEqual({ time: null });
+    expect(validateEventPatch({ date: '2026-09-15', members: [] }, none)).toEqual({ date: '2026-09-15', members: [] });
+  });
+
+  it('시작·끝은 저장된 값과 합쳐 검사한다', () => {
+    expect(validateEventPatch({ end_time: '15:00' }, { time: '14:00', end_time: null })).toEqual({ end_time: '15:00' });
+    expect(() => validateEventPatch({ end_time: '15:00' }, none)).toThrow(/시작/);
+    expect(() => validateEventPatch({ end_time: '13:00' }, timed)).toThrow(/늦어야/);
+    expect(() => validateEventPatch({ time: '16:00' }, timed)).toThrow(/늦어야/);
+    expect(validateEventPatch({ time: '14:30' }, timed)).toEqual({ time: '14:30' });
+  });
+
+  it('시작을 지우면 끝도 같이 지운다', () => {
+    expect(validateEventPatch({ time: null }, timed)).toEqual({ time: null, end_time: null });
+    expect(validateEventPatch({ time: '' }, timed)).toEqual({ time: null, end_time: null });
   });
 
   it('빈 patch·모르는 필드만·잘못된 값은 RangeError', () => {
-    expect(() => validateEventPatch({})).toThrow(/바꿀 내용/);
-    expect(() => validateEventPatch({ id: 'x' })).toThrow(/바꿀 내용/);
-    expect(() => validateEventPatch({ title: '' })).toThrow(RangeError);
+    expect(() => validateEventPatch({}, none)).toThrow(/바꿀 내용/);
+    expect(() => validateEventPatch({ id: 'x' }, none)).toThrow(/바꿀 내용/);
+    expect(() => validateEventPatch({ title: '' }, none)).toThrow(RangeError);
   });
 });
 
@@ -79,6 +105,9 @@ describe('events (fs 모드)', () => {
     const e = await createEvent({ date: '2026-09-14', title: '방문' });
     const u = await updateEvent(e.id, { time: '15:00', members: ['모두'] });
     expect(u).toEqual({ ...e, time: '15:00', members: ['모두'] });
+    expect(await updateEvent(e.id, { end_time: '16:00' })).toEqual({ ...u, end_time: '16:00' });
+    await expect(updateEvent(e.id, { end_time: '14:00' })).rejects.toThrow(/늦어야/);
+    expect(await updateEvent(e.id, { time: null })).toEqual({ ...u, time: null, end_time: null });
     await deleteEvent(e.id);
     expect(await listEvents('2026-09-14', '2026-09-14')).toEqual([]);
     await expect(updateEvent(e.id, { title: 'x' })).rejects.toBeInstanceOf(NotFoundError);

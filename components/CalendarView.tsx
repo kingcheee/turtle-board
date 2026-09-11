@@ -39,7 +39,8 @@ export default function CalendarView({ refreshKey }: { refreshKey: number }) {
   }
 
   async function submit(form: EventForm): Promise<string | null> {
-    const body = { date: form.date, time: form.time || null, title: form.title, members: form.members };
+    const time = form.time || null;
+    const body = { date: form.date, time, end_time: time ? form.end_time || null : null, title: form.title, members: form.members };
     try {
       const r = editor?.mode === 'edit'
         ? await fetch(`/api/events/${editor.event.id}`, { method: 'PATCH', headers: JSON_H, body: JSON.stringify(body) })
@@ -65,8 +66,9 @@ export default function CalendarView({ refreshKey }: { refreshKey: number }) {
   }
 
   const initial: EventForm | null = editor === null ? null
-    : editor.mode === 'add' ? { date: editor.date, time: '', title: '', members: [] }
-    : { date: editor.event.date, time: editor.event.time ?? '', title: editor.event.title, members: editor.event.members };
+    : editor.mode === 'add' ? { date: editor.date, time: '', end_time: '', title: '', members: [] }
+    : { date: editor.event.date, time: editor.event.time ?? '', end_time: editor.event.end_time ?? '',
+        title: editor.event.title, members: editor.event.members };
 
   return (
     <div className="screen">
@@ -96,15 +98,16 @@ export default function CalendarView({ refreshKey }: { refreshKey: number }) {
               </div>
               {(byDate.get(d) ?? []).map((e) => {
                 const c = e.members[0] ? memberColor(e.members[0]) : null;
+                const span = e.time ? (e.end_time ? `${e.time}–${e.end_time}` : e.time) : null; // '14:00–15:30' / '14:00' / 없음
                 return (
                   <button
                     key={e.id}
                     className="cal-ev"
                     style={c ? { background: c.bg, color: c.fg } : undefined}
-                    title={`${e.time ? `${e.time} ` : ''}${e.title}${e.members.length ? ` — ${e.members.join(', ')}` : ''}`}
+                    title={`${span ? `${span} ` : ''}${e.title}${e.members.length ? ` — ${e.members.join(', ')}` : ''}`}
                     onClick={(ev) => { ev.stopPropagation(); setEditor({ mode: 'edit', event: e }); }}
                   >
-                    {e.time && <span className="cal-ev-time">{e.time}</span>}{e.title}
+                    {span && <span className="cal-ev-time">{span}</span>}{e.title}
                   </button>
                 );
               })}
