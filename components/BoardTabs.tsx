@@ -4,6 +4,14 @@ import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { boardTabId } from '@/lib/kanban/dnd-intent';
 
+export type Screen = 'board' | 'calendar' | 'timetable';
+
+// 탭 줄 맨 앞의 고정 탭 — 보드가 아니라 화면을 고른다. 카드 드롭 지점이 아니다(useDroppable 없음).
+const FIXED: { screen: Exclude<Screen, 'board'>; label: string }[] = [
+  { screen: 'calendar', label: '📅 달력' },
+  { screen: 'timetable', label: '🕐 시간표' },
+];
+
 function BoardTab({ name, isActive, isDropTarget, onSelect, onMenu }: {
   name: string; isActive: boolean; isDropTarget: boolean;
   onSelect: () => void; onMenu: (x: number, y: number) => void;
@@ -22,19 +30,25 @@ function BoardTab({ name, isActive, isDropTarget, onSelect, onMenu }: {
   );
 }
 
-export default function BoardTabs({ boards, active, overBoard, onSelect, onCreate, onDelete }: {
-  boards: string[]; active: string | null; overBoard: string | null;
-  onSelect: (n: string) => void; onCreate: (n: string) => void; onDelete: (n: string) => void;
+export default function BoardTabs({ screen, boards, active, overBoard, onScreen, onSelect, onCreate, onDelete }: {
+  screen: Screen; boards: string[]; active: string | null; overBoard: string | null;
+  onScreen: (s: Screen) => void; onSelect: (n: string) => void; onCreate: (n: string) => void; onDelete: (n: string) => void;
 }) {
   const [menu, setMenu] = useState<{ name: string; x: number; y: number } | null>(null);
 
   return (
     <div className="tabs">
+      {FIXED.map((f) => (
+        <button key={f.screen} className={`tab${screen === f.screen ? ' active' : ''}`} onClick={() => onScreen(f.screen)}>
+          {f.label}
+        </button>
+      ))}
+      <span className="tab-sep" />
       {boards.map((b) => (
         <BoardTab
           key={b}
           name={b}
-          isActive={b === active}
+          isActive={screen === 'board' && b === active}
           isDropTarget={overBoard === b}
           onSelect={() => onSelect(b)}
           onMenu={(x, y) => setMenu({ name: b, x, y })}

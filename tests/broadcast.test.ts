@@ -11,7 +11,7 @@ describe('broadcastChange', () => {
   it('env 미설정이면 fetch 자체를 안 부른다 (fs 모드 no-op)', async () => {
     const spy = vi.fn();
     vi.stubGlobal('fetch', spy);
-    await broadcastChange({ kind: 'chat' });
+    await broadcastChange({ kind: 'events' });
     expect(spy).not.toHaveBeenCalled();
   });
 

@@ -1,10 +1,11 @@
 # 거북이 보드 — 팀 칸반 대시보드
 
-팀 거북이의 웹 칸반 대시보드. **데이터 정본은 Supabase**(`kanban_boards`·
-`kanban_chat`·`kanban_trash` 테이블) — `data/*.md`(obsidian-kanban 포맷)는 로컬 파일
-모드용 시드일 뿐 정본이 아니다(옵시디언 호환은 2026-08-28 폐기 결정). 이 repo에는
+팀 거북이의 웹 칸반 대시보드 + 팀 달력 + 당일 시간표. **데이터 정본은 Supabase**(`kanban_boards`·
+`kanban_trash`·`kanban_events`·`kanban_timetable` 테이블) — `data/*.md`(obsidian-kanban 포맷)는
+로컬 파일 모드용 시드일 뿐 정본이 아니다(옵시디언 호환은 2026-08-28 폐기 결정). 이 repo에는
 샘플(`data/sample-board.md`)만 추적되고 실제 팀 보드 데이터는 커밋하지 않는다.
-설계 문서·구축 이력은 비공개 모노repo(`kingcheee/yeondongje-calculator`)에 있다.
+2026-08-29 이전 구축 이력은 비공개 모노repo(`kingcheee/yeondongje-calculator`)에, 그 뒤의 설계
+스펙·계획은 이 repo의 `docs/superpowers/`에 있다.
 
 ## 실행 (로컬 개발)
 
@@ -15,8 +16,9 @@
 - `.env.local`에 Supabase 키(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_ANON_KEY`·
   `SUPABASE_SERVICE_ROLE_KEY`)가 있으면 **supabase 모드**로 뜬다 — **프로덕션 DB에 직접
   붙는다**, 로컬 실험으로 실데이터를 건드리지 않도록 주의.
-- 키가 없으면 **파일 모드**(`data/*.md`)로 뜬다 — 다른 클라이언트와 실시간 동기화는
-  안 되지만 로컬 UI 확인용으로는 충분하다. 기여자는 이 모드로 개발하면 된다.
+- 키가 없으면 **파일 모드**(`data/*.md`, 일정·시간표는 `data/.events.json`·`data/.timetable.json`)로
+  뜬다 — 다른 클라이언트와 실시간 동기화는 안 되지만 로컬 UI 확인용으로는 충분하다.
+  기여자는 이 모드로 개발하면 된다.
 
 ## 기여 (PR 환영)
 
@@ -34,7 +36,8 @@
   `DASHBOARD_PASSWORD` · `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` ·
   `SUPABASE_SERVICE_ROLE_KEY`
 - **최초 1회 셋업**(순서 고정):
-  1. Supabase SQL Editor에서 `supabase/setup.sql` 실행 (테이블·RLS·RPC 함수 생성)
+  1. Supabase SQL Editor에서 `supabase/setup.sql` 실행 (테이블·RLS·RPC 함수 생성).
+     재실행해도 안전하다 — 2026-09-11 달력·시간표 테이블이 추가됐으니 기존 배포도 한 번 더 실행할 것
   2. `.env.local`에 위 키 설정
   3. `npm run seed` — `data/*.md` 시드를 Supabase로 적재
   4. Vercel에 위 4개 환경 변수 등록 후 배포
@@ -50,13 +53,23 @@
 - **컬럼 삭제**: 컬럼 제목 **우클릭** → 「🗑 컬럼 삭제」. 안의 카드까지 함께 지워지고
   **되돌릴 수 없다**(보드 삭제와 달리 휴지통으로 가지 않는다). 마지막 남은 컬럼은 못 지운다.
 - **보드 삭제**: 보드 탭 우클릭. 이건 휴지통으로 옮겨져 복구할 수 있다.
-- **팀 채팅**: 오른쪽 사이드바. 보내는 사람을 드롭다운에서 고르면 기억된다.
+
+## 달력·시간표 (팀원용)
+
+- 탭 줄 맨 앞의 「📅 달력」「🕐 시간표」 고정 탭. 카드 마감(`@{…}`)과는 무관한 **별도 저장소**다.
+- **달력**: 월 그리드. 빈 칸 클릭 → 일정 추가(날짜 채워짐), 일정 클릭 → 편집·삭제. 일정은 날짜 ·
+  시간(비우면 종일) · 제목 · 담당자(복수). 담당자가 있으면 첫 담당자 색으로 칠해진다.
+- **시간표**: 오늘 하루의 시간 블록. ‹ ›로 날짜 이동, 「+ 블록」으로 추가(시작～끝 · 제목 · 담당자).
+  체크박스로 완료, 오늘이면 지금 시각이 든 블록에 형광펜. 블록의 날짜는 못 옮긴다 — 지우고 다시 추가.
+- 팀 채팅은 2026-09-11에 뺐다. Supabase에 남은 `kanban_chat` 테이블은 `drop table kanban_chat;`로
+  지워도 된다(코드는 더 이상 안 본다).
 
 ## 실시간 동기화
 
 Supabase Realtime 공개 채널 `kanban`에 **내용 없는 변경 신호**만 흐른다 — 클라이언트는
 신호를 받으면 비밀번호 게이트 뒤의 API로 다시 조회해서 최신 상태를 반영한다(신호 자체에
-보드·카드 내용은 실리지 않는다).
+보드·카드 내용은 실리지 않는다). 신호 종류는 `{kind:'board',board}`·`{kind:'events'}`·
+`{kind:'timetable'}` 셋.
 
 ## 환경 변수 (`.env.local`, 예시는 `.env.local.example`)
 
@@ -79,4 +92,5 @@ Supabase Realtime 공개 채널 `kanban`에 **내용 없는 변경 신호**만 �
 
 ## 테스트
 
-    npm test    # 파서 라운드트립 · 연산 · 저장소(파일/Supabase) · 드래그 판정 · 팀 채팅 · 실시간 브로드캐스트
+    npm test    # 파서 라운드트립 · 연산 · 저장소(파일/Supabase) · 드래그 판정 · 실시간 브로드캐스트
+                # · 날짜 함수 · 행 저장소 · 일정 · 시간표 · API 라우트(상태 코드)

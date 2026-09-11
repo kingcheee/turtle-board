@@ -10,5 +10,8 @@
   `data/sample-board.md` 샘플뿐. 정본은 Supabase다.
 - 코드 수정 시 반드시 `npm test` 통과 확인. PR도 CI(`.github/workflows/test.yml`)가 같은
   테스트를 돌린다.
-- 사용자 PC 로컬 체크아웃(`C:\projects\01-final\kanban-board`)에서는 비공개 모노repo 문서
-  `../docs/handoffs/HANDOFF.md`(구축 경위·룰링·알려진 한계)가 옆에 있다 — 클론 환경엔 없다.
+- 일정(`lib/events.ts`)·시간표(`lib/timetable.ts`)는 보드와 달리 **행 단위 저장소**(`lib/storage/rows.ts`,
+  CAS 없음)다. 클라이언트가 쓰는 타입·순수 함수는 `lib/schedule.ts`·`lib/dates.ts`에만 둔다 — 저장소를
+  무는 모듈을 클라이언트 컴포넌트가 import하면 `node:fs` 때문에 빌드가 깨진다(2026-09-11 실측).
+- 설계 스펙·구현 계획은 `docs/superpowers/`(specs·plans). 2026-08-29 이전 구축 경위·룰링은 비공개
+  모노repo `kingcheee/yeondongje-calculator`의 `docs/handoffs/`에 있다 — 이 클론엔 없다.

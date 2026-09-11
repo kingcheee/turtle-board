@@ -5,19 +5,22 @@ import { DndContext, DragOverlay } from '@dnd-kit/core';
 import type { UiBoard } from '@/lib/kanban/types';
 import type { Op } from '@/lib/kanban/ops';
 import type { Pos } from '@/lib/kanban/dnd-intent';
-import type { TeamChatMsg } from '@/lib/team-chat';
-import BoardTabs from '@/components/BoardTabs';
+import BoardTabs, { type Screen } from '@/components/BoardTabs';
 import BoardView from '@/components/BoardView';
+import CalendarView from '@/components/CalendarView';
+import TimetableView from '@/components/TimetableView';
 import { CardBody } from '@/components/CardView';
-import ChatSidebar from '@/components/ChatSidebar';
 import { useBoardDnd } from '@/components/useBoardDnd';
 import { useRealtime } from '@/components/useRealtime';
 
 export default function Page() {
+  const [screen, setScreen] = useState<Screen>('board');
   const [boards, setBoards] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [board, setBoard] = useState<UiBoard | null>(null);
-  const [teamMsgs, setTeamMsgs] = useState<TeamChatMsg[]>([]);
+  // 달력·시간표 재조회 트리거 — 실시간 신호·재접속 때 +1, 뷰가 키 변화를 보고 다시 불러온다
+  const [eventsKey, setEventsKey] = useState(0);
+  const [timetableKey, setTimetableKey] = useState(0);
   const activeRef = useRef(active);
   activeRef.current = active;
   const boardRef = useRef(board);
@@ -44,29 +47,22 @@ export default function Page() {
   useEffect(() => { refetchBoards(); }, [refetchBoards]);
   useEffect(() => { setBoard(null); refetch(); }, [active, refetch]);
 
-  const fetchTeamChat = useCallback(async () => {
-    try {
-      const r = await fetch('/api/team-chat');
-      if (!r.ok) return;
-      const d = await r.json();
-      setTeamMsgs(d.messages ?? []);
-    } catch {}
-  }, []);
-
-  useEffect(() => { fetchTeamChat(); }, [fetchTeamChat]);
-
   const onRemoteBoard = useCallback((b: string) => {
     if (b === activeRef.current) refetch();
     else refetchBoards();
   }, [refetch, refetchBoards]);
 
+  const onEvents = useCallback(() => setEventsKey((k) => k + 1), []);
+  const onTimetable = useCallback(() => setTimetableKey((k) => k + 1), []);
+
   const onConnect = useCallback(() => {
     refetchBoards();
     refetch();
-    fetchTeamChat();
-  }, [refetchBoards, refetch, fetchTeamChat]);
+    onEvents();
+    onTimetable();
+  }, [refetchBoards, refetch, onEvents, onTimetable]);
 
-  useRealtime({ onBoard: onRemoteBoard, onChat: fetchTeamChat, onConnect });
+  useRealtime({ onBoard: onRemoteBoard, onEvents, onTimetable, onConnect });
 
   const sendOp = useCallback(async (op: Op): Promise<boolean> => {
     const name = activeRef.current;
@@ -120,33 +116,41 @@ export default function Page() {
     board, onOp: sendOp, onMoveToBoard: moveCardToBoard,
   });
 
+  const onSelectBoard = useCallback((name: string) => {
+    setActive(name);
+    setScreen('board');
+  }, []);
+
   const onCreate = useCallback(async (name: string) => {
     const r = await fetch('/api/boards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    if (r.ok) { await refetchBoards(); setActive(name); }
-  }, [refetchBoards]);
+    if (r.ok) { await refetchBoards(); onSelectBoard(name); }
+  }, [refetchBoards, onSelectBoard]);
 
   return (
     <DndContext {...dnd}>
       <div className="topbar">
         <h1 className="pixel">거북이 보드</h1>
         <BoardTabs
+          screen={screen}
           boards={boards}
           active={active}
           overBoard={overBoard}
-          onSelect={setActive}
+          onScreen={setScreen}
+          onSelect={onSelectBoard}
           onCreate={onCreate}
           onDelete={onDeleteBoard}
         />
       </div>
       <div className="app">
-        {board
+        {screen === 'calendar' && <CalendarView refreshKey={eventsKey} />}
+        {screen === 'timetable' && <TimetableView refreshKey={timetableKey} />}
+        {screen === 'board' && (board
           ? <BoardView board={board} onOp={sendOp} overCol={overCol} />
-          : <p style={{ padding: 24 }}>불러오는 중…</p>}
-        <ChatSidebar teamMsgs={teamMsgs} onSent={fetchTeamChat} />
+          : <p style={{ padding: 24 }}>불러오는 중…</p>)}
       </div>
       <DragOverlay dropAnimation={null}>
         {activeCard && (

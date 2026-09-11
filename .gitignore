@@ -30,8 +30,9 @@
 !/data/AGENTS.md
 !/data/sample-board.md
 
-# 팀 채팅 로그·삭제 보드 보관함 (로컬 실데이터 — 커밋 안 함)
-/data/.team-chat.json
+# 파일 모드의 일정·시간표 행·삭제 보드 보관함 (로컬 실데이터 — 커밋 안 함)
+/data/.events.json
+/data/.timetable.json
 /data/.trash/
 
 # 서버 실행 로그 (.next 안에 두면 build가 지우려다 EBUSY로 실패한다 — 밖에 둘 것)
