@@ -143,6 +143,7 @@ interface RowFilter { date?: string; from?: string; to?: string }   // from·to 
 
 interface RowStore<T extends { id: string }> {
   list(filter: RowFilter): Promise<T[]>;                // 정렬은 호출자 몫
+  get(id: string): Promise<T>;                          // 없으면 NotFoundError — 부분 patch 검증(updateBlock의 시작·끝 합산)용
   insert(row: Omit<T, 'id' | 'created_at'>): Promise<T>;
   update(id: string, patch: Partial<Omit<T, 'id' | 'created_at'>>): Promise<T>;  // 없으면 NotFoundError
   remove(id: string): Promise<void>;                    // 없으면 NotFoundError
@@ -178,7 +179,11 @@ function rowStore<T extends { id: string }>(table: string, file: string): RowSto
 - `listBlocks(date)` — 정렬: start_time → end_time → created_at.
 - `createBlock` / `updateBlock`(done 토글 포함) / `deleteBlock` → `broadcastChange({ kind: 'timetable' })`.
 - `currentBlock(blocks, now: 'HH:MM'): TimeBlock | null` — `start ≤ now < end`인 첫 블록(순수 함수,
-  UI가 형광펜에 쓴다).
+  UI가 형광펜에 쓴다). **구현은 `lib/schedule.ts`에 있다** — 3.2의 타입과 함께 클라이언트 안전 모듈로 분리
+  (`lib/timetable.ts`는 저장소를 물어 클라이언트가 import하면 `node:fs` 때문에 빌드가 깨진다).
+
+**`lib/fields.ts`** (구현 중 추가) — `checkDate`·`checkTime`·`checkTitle`·`checkMembers`·`checkId`. 위 두 모듈이
+같이 쓰는 필드 검증을 한 곳에 둔다. `checkId`는 uuid 형식이 아니면 `NotFoundError`(PostgREST 400이 500으로 새는 것을 막는다).
 
 **`lib/dates.ts`** (순수 함수, 서버·클라이언트 공용)
 - `isDate(s)`, `isTime(s)`, `addDays(date, n)`, `weekdayKo(date)` → `'금'`,
@@ -244,7 +249,9 @@ components/TimetableView.tsx  하루 블록 목록 + 조회 + BlockEditor 호출
 components/BlockEditor.tsx
 components/MemberPicker.tsx   CardEditor에서 추출
 lib/dates.ts                  순수 날짜 함수 + kstNow
-lib/events.ts  lib/timetable.ts
+lib/schedule.ts               TeamEvent·TimeBlock 타입 + currentBlock (클라이언트 안전 — 저장소를 물지 않는다)
+lib/fields.ts                 일정·블록 공용 필드 검증 (checkDate·checkTime·checkTitle·checkMembers·checkId)
+lib/events.ts  lib/timetable.ts   서버 전용 (저장소 + broadcastChange)
 lib/storage/mode.ts  lib/storage/rows.ts
 app/api/events/route.ts  app/api/events/[id]/route.ts
 app/api/timetable/route.ts  app/api/timetable/[id]/route.ts

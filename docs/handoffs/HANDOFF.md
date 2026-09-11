@@ -15,6 +15,8 @@
       `docs/superpowers/plans/2026-09-11-calendar-timetable.md`.
 - [ ] **Supabase 테이블 생성** — `supabase/setup.sql` 재실행. 이 세션은 Brave Origin의 Supabase가 로그아웃 상태라
       (SQL Editor URL이 sign-in으로 리다이렉트) 실행하지 못했다. 로그인은 사용자만 할 수 있다.
+      2026-09-11 두 번째 세션도 같은 상태(curl 확인: 두 테이블 모두 PGRST205). 다른 경로(DB 비밀번호·Supabase CLI·
+      PAT·Vercel env의 DB URL)는 이 머신에 하나도 없어 대시보드 로그인 외엔 방법이 없다.
 - [ ] **`git push origin main`** — 테이블이 없는 채 push하면 배포된 달력·시간표 API가 500이라(보드는 정상) **일부러
       보류**했다. 위 SQL이 끝난 뒤 push한다.
 - [ ] 프로덕션 확인.
@@ -78,7 +80,7 @@
 - [ ] 사용자에게 Supabase 로그인(또는 직접 `supabase/setup.sql` 실행)을 요청하고, 위 curl로 `kanban_events`가 생겼는지 확인
 - [ ] 테이블 확인 후 `git push origin main` → `gh api repos/kingcheee/turtle-board/commits/$(git rev-parse HEAD)/status --jq .state`가 success인지
 - [ ] 프로덕션에서 일정·블록 추가 → 다른 탭 실시간 반영 확인
-- [ ] (선택) 스펙 §7·§3.5에 `lib/schedule.ts`·`lib/fields.ts`·`RowStore.get` 반영 — 계획 Self-Review에 적어둔 차이
+- [x] (선택) 스펙 §7·§3.5·§3.6에 `lib/schedule.ts`·`lib/fields.ts`·`RowStore.get` 반영 (2026-09-11 두 번째 세션, 로컬 커밋)
 <!-- /NEXT-ACTIONS -->
 
 ## 추천 스킬·도구
