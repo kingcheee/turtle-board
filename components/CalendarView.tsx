@@ -70,10 +70,12 @@ export default function CalendarView({ refreshKey }: { refreshKey: number }) {
   return (
     <div className="screen">
       <div className="screen-head">
-        <button className="nav" onClick={() => setYm(addMonths(ym, -1))} aria-label="이전 달">‹</button>
-        <span className="pixel title">{formatMonthKo(ym)}</span>
-        <button className="nav" onClick={() => setYm(addMonths(ym, 1))} aria-label="다음 달">›</button>
-        <button className="tab ghost" onClick={() => setYm(today.slice(0, 7))}>오늘</button>
+        <div className="screen-nav">
+          <button className="nav" onClick={() => setYm(addMonths(ym, -1))} aria-label="이전 달">‹</button>
+          <span className="pixel title">{formatMonthKo(ym)}</span>
+          <button className="nav" onClick={() => setYm(addMonths(ym, 1))} aria-label="다음 달">›</button>
+          <button className="tab ghost" onClick={() => setYm(today.slice(0, 7))}>오늘</button>
+        </div>
       </div>
       <div className="cal-wds">
         {WEEKDAYS.map((w) => <div key={w} className="cal-wd">{w}</div>)}

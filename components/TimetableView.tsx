@@ -75,11 +75,13 @@ export default function TimetableView({ refreshKey }: { refreshKey: number }) {
   return (
     <div className="screen">
       <div className="screen-head">
-        <button className="nav" onClick={() => setDate(addDays(date, -1))} aria-label="전날">‹</button>
-        <span className="pixel title">{date} ({weekdayKo(date)})</span>
-        <button className="nav" onClick={() => setDate(addDays(date, 1))} aria-label="다음날">›</button>
-        <button className="tab ghost" onClick={() => setDate(now.date)}>오늘</button>
-        <button className="tab ghost" style={{ marginLeft: 'auto' }} onClick={() => setEditor({ mode: 'add' })}>+ 블록</button>
+        <div className="screen-nav">
+          <button className="nav" onClick={() => setDate(addDays(date, -1))} aria-label="전날">‹</button>
+          <span className="pixel title">{date} ({weekdayKo(date)})</span>
+          <button className="nav" onClick={() => setDate(addDays(date, 1))} aria-label="다음날">›</button>
+          <button className="tab ghost" onClick={() => setDate(now.date)}>오늘</button>
+        </div>
+        <button className="tab ghost screen-side" onClick={() => setEditor({ mode: 'add' })}>+ 블록</button>
       </div>
       {blocks.length === 0 && <p className="tt-empty">이 날 시간표가 비어 있어요 — + 블록으로 추가</p>}
       <div className="tt-list">
